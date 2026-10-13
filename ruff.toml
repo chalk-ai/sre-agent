@@ -1,0 +1,9 @@
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "ISC"]
+# ISC003 prefers implicit concatenation ("a" "b"); this repo uses explicit `+` instead.
+ignore = ["ISC003"]
+
+[lint.isort]
+known-first-party = ["scenario", "investigation", "deploy_services"]

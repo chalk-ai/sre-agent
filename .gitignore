@@ -1,0 +1,5 @@
+.services.env
+traces/2*.jsonl
+__pycache__/
+.venv/
+.ruff_cache/

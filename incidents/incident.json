@@ -1,0 +1,35 @@
+{
+  "incident": {
+    "id": "6f2b9c1e-4127-4d8a-9b3e-2c71d0a5e914",
+    "type": "incidents",
+    "attributes": {
+      "public_id": 4127,
+      "title": "checkout-api p99 latency above 2s",
+      "severity": "SEV-2",
+      "state": "active",
+      "created": "2026-10-13T14:09:12Z",
+      "detected": "2026-10-13T14:09:00Z",
+      "customer_impacted": true,
+      "customer_impact_scope": "Checkouts slow or failing for some merchants",
+      "commander": "@maya.lindqvist",
+      "monitor_id": 88104412,
+      "fields": {
+        "services": { "type": "autocomplete", "value": ["checkout-api"] },
+        "teams": { "type": "autocomplete", "value": ["checkout"] },
+        "detection_method": { "type": "dropdown", "value": "monitor" },
+        "root_cause": { "type": "textbox", "value": null }
+      }
+    }
+  },
+  "monitor": {
+    "id": 88104412,
+    "name": "[P1] checkout-api p99 latency above 2s",
+    "type": "query alert",
+    "query": "percentile(last_5m):p99:trace.http.request{service:checkout-api,env:prod,resource_name:post_/v1/checkout} > 2",
+    "message": "p99 checkout latency is {{value}}s. Runbook: RB-12. @incident-sev2 @slack-checkout-oncall",
+    "overall_state": "Alert",
+    "options": { "thresholds": { "critical": 2, "warning": 1.2 } },
+    "tags": ["service:checkout-api", "team:checkout", "env:prod", "tier:0"],
+    "state_changed": "2026-10-13T14:09:00Z"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "event": "incident.created",
+  "incident_id": "6f2b9c1e-4127-4d8a-9b3e-2c71d0a5e914",
+  "public_id": 4127,
+  "title": "checkout-api p99 latency above 2s",
+  "severity": "SEV-2",
+  "status": "active",
+  "services": ["checkout-api"],
+  "monitor_id": 88104412,
+  "triggered_at": "2026-10-13T14:09:12Z",
+  "url": "https://app.datadoghq.com/incidents/4127"
+}
