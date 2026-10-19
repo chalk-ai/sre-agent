@@ -14,13 +14,11 @@ What the sandbox can reach is the point:
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-import httpx
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_MODEL = "anthropic/claude-sonnet-5-5"
@@ -43,21 +41,6 @@ print("POST OPS_MCP_URL (no token)|" + post("OPS_MCP_URL", json={}))
 """
 
 
-def chalk_access_token() -> str:
-    """A short-lived token for the agent, minted from this process's client credentials."""
-    resp = httpx.post(
-        f"{os.environ['CHALK_API_SERVER'].rstrip('/')}/v1/oauth/token",
-        json={
-            "client_id": os.environ["CHALK_CLIENT_ID"],
-            "client_secret": os.environ["CHALK_CLIENT_SECRET"],
-            "grant_type": "client_credentials",
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()["access_token"]
-
-
 def investigate(
     webhook: dict[str, Any],
     services: dict[str, str],
@@ -68,12 +51,14 @@ def investigate(
 
     `services` holds OPS_MCP_URL, OPS_MCP_TOKEN, DD_API_URL, DD_API_KEY and DD_APP_KEY.
     Returns the agent's exit code."""
-    from chalkcompute import Image, NetworkPolicy, Sandbox, SandboxClient, Secret
+    from chalkcompute import ConnectClient, Image, NetworkPolicy, Sandbox, SandboxClient, Secret
 
-    api = os.environ["CHALK_API_SERVER"].rstrip("/")
-    os.environ["CHALK_API_TOKEN"] = chalk_access_token()
-    for key in ("OPS_MCP_TOKEN", "DD_API_KEY", "DD_APP_KEY"):
-        os.environ[key] = services[key]
+    with ConnectClient() as connection:
+        api = connection.api_server
+        env_id = connection.environment_id
+        chalk_credential = Secret.from_value(
+            "CHALK_API_TOKEN", connection.request_headers()["authorization"].removeprefix("Bearer ")
+        )
     hosts = {
         "chalk": urlsplit(api).hostname,
         "ops": urlsplit(services["OPS_MCP_URL"]).hostname,
@@ -95,13 +80,13 @@ def investigate(
             # An empty allowlist: the three hosts below are the only egress.
             network_policy=NetworkPolicy(allowed_hosts=[]),
         )
-        .add_credentials(hosts["chalk"], Secret.from_local_env("CHALK_API_TOKEN"))
-        .add_credentials(hosts["ops"], Secret.from_local_env("OPS_MCP_TOKEN"))
-        .add_credentials(hosts["datadog"], Secret.from_local_env("DD_API_KEY"), Secret.from_local_env("DD_APP_KEY"))
+        .add_credentials(hosts["chalk"], chalk_credential)
+        .add_credentials(hosts["ops"], Secret.from_value("OPS_MCP_TOKEN", services["OPS_MCP_TOKEN"]))
+        .add_credentials(hosts["datadog"], Secret.from_value("DD_API_KEY", services["DD_API_KEY"]), Secret.from_value("DD_APP_KEY", services["DD_APP_KEY"]))
     )
     env = {
         "CHALK_API_HOST": api,
-        "CHALK_ENVIRONMENT_ID": os.environ["CHALK_ENVIRONMENT_ID"],
+        "CHALK_ENVIRONMENT_ID": env_id,
         "OPS_MCP_URL": services["OPS_MCP_URL"],
         "DD_API_URL": services["DD_API_URL"],
         "AGENT_MODEL": model,

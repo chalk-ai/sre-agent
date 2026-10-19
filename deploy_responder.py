@@ -2,7 +2,7 @@
 #
 # /// script
 # requires-python = ">=3.12,<3.14"
-# dependencies = ["chalkcompute>=2.13.5"]
+# dependencies = ["chalkcompute>=2.13.8"]
 # ///
 """Deploy the webhook responder: a small ScalingGroup that starts an investigation per incident.
 
@@ -10,15 +10,13 @@ Run deploy_services.py first; this reads .services.env and adds WEBHOOK_SECRET a
 RESPONDER_URL to it. Point a Datadog webhook at $RESPONDER_URL/webhooks/datadog with the
 header `X-Webhook-Secret: $WEBHOOK_SECRET`.
 
-    ./deploy_responder.py [--env-id <environment>]
+    ./deploy_responder.py
 
-The responder starts sandboxes with the Chalk client credentials this script deploys it with.
-Give it a service token scoped to the one environment rather than a personal one.
+The responder starts sandboxes using its own Chalk workload identity.
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 import secrets
 import sys
@@ -27,15 +25,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from deploy_services import ENV_FILE, load_chalk_env, read_env_file  # noqa: E402
+from deploy_services import ENV_FILE, read_env_file  # noqa: E402
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env-id", default=None)
-    parser.add_argument("--name", default="sre-agent-responder")
-    args = parser.parse_args()
-    load_chalk_env(args.env_id)
     from chalkcompute import Image, ReadinessProbe, ScalingGroup, Secret
 
     saved = read_env_file()
@@ -48,7 +41,7 @@ def main() -> None:
 
     image = (
         Image.debian_slim(python_version="3.12")
-        .pip_install(["chalkcompute>=2.13.5", "fastapi==0.116.1", "uvicorn==0.35.0", "httpx==0.28.1"])
+        .pip_install(["chalkcompute>=2.13.8", "fastapi==0.116.1", "uvicorn==0.35.0", "httpx==0.28.1"])
         .add_local_file(str(HERE / "responder.py"), "/app/responder.py", strategy="copy")
         .add_local_file(str(HERE / "investigation.py"), "/app/investigation.py", strategy="copy")
         .add_local_file(str(HERE / "agent.py"), "/app/agent.py", strategy="copy")
@@ -56,20 +49,17 @@ def main() -> None:
     )
     responder = ScalingGroup(
         image=image,
-        name=args.name,
+        name='sre-agent-responder',
         cpu="500m",
         memory="1Gi",
         env={
-            "CHALK_API_SERVER": os.environ["CHALK_API_SERVER"],
-            "CHALK_ENVIRONMENT_ID": os.environ["CHALK_ENVIRONMENT_ID"],
-            "CHALK_CLIENT_ID": Secret.from_local_env("CHALK_CLIENT_ID"),
-            "CHALK_CLIENT_SECRET": Secret.from_local_env("CHALK_CLIENT_SECRET"),
             "OPS_MCP_URL": saved["OPS_MCP_URL"],
             "DD_API_URL": saved["DD_API_URL"],
             **{key: Secret.from_local_env(f"DEPLOY_{key}") for key in secret_keys},
         },
         entrypoint=["python", "/app/responder.py"],
         port=8080,
+        chalk_identity=True,
         readiness_probe=ReadinessProbe.http("/healthz"),
         min_replicas=1,
         max_replicas=1,

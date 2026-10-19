@@ -2,38 +2,24 @@
 #
 # /// script
 # requires-python = ">=3.12,<3.14"
-# dependencies = ["chalkcompute>=2.13.5"]
+# dependencies = ["chalkcompute>=2.13.8"]
 # ///
 """Deploy the internal ops MCP server and the Datadog API stand-in as two Chalk ScalingGroups.
 
 Each gets its own random credentials. URLs and credentials are written to .services.env
 (gitignored), where run.py and responder.py pick them up. Re-running reuses the credentials.
 
-    ./deploy_services.py [--env-id <environment>]
+    ./deploy_services.py
 """
 
 from __future__ import annotations
 
-import argparse
-import json
 import os
 import secrets
-import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ENV_FILE = HERE / ".services.env"
-
-
-def load_chalk_env(env_id: str | None) -> None:
-    if "CHALK_CLIENT_ID" not in os.environ:
-        cfg = json.loads(subprocess.check_output(["chalk", "config", "--json"]))
-        os.environ["CHALK_API_SERVER"] = cfg["apiServer"]["value"]
-        os.environ["CHALK_CLIENT_ID"] = cfg["clientId"]["value"]
-        os.environ["CHALK_CLIENT_SECRET"] = cfg["clientSecret"]["value"]
-        os.environ.setdefault("CHALK_ENVIRONMENT_ID", cfg["environment"]["value"])
-    if env_id:
-        os.environ["CHALK_ENVIRONMENT_ID"] = env_id
 
 
 def read_env_file() -> dict[str, str]:
@@ -44,11 +30,6 @@ def read_env_file() -> dict[str, str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env-id", default=None)
-    parser.add_argument("--prefix", default="halyard")
-    args = parser.parse_args()
-    load_chalk_env(args.env_id)
     from chalkcompute import Image, ReadinessProbe, ScalingGroup, Secret
 
     saved = read_env_file()
@@ -66,7 +47,7 @@ def main() -> None:
     )
     ops = ScalingGroup(
         image=ops_image,
-        name=f"{args.prefix}-ops-mcp",
+        name='halyard-ops-mcp',
         cpu="500m",
         memory="1Gi",
         env={"OPS_MCP_TOKEN": Secret.from_local_env("DEPLOY_OPS_MCP_TOKEN")},
@@ -88,7 +69,7 @@ def main() -> None:
     )
     incidents = ScalingGroup(
         image=incidents_image,
-        name=f"{args.prefix}-incidents-api",
+        name='halyard-incidents-api',
         cpu="250m",
         memory="512Mi",
         env={

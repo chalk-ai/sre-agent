@@ -83,13 +83,12 @@ POST https://<ops-mcp-host>/mcp (no token)   401
 ## Run it
 
 You need [`uv`](https://docs.astral.sh/uv/) and a Chalk environment. Credentials come from
-`chalk config`, or from `CHALK_API_SERVER`, `CHALK_CLIENT_ID`, `CHALK_CLIENT_SECRET` and
-`CHALK_ENVIRONMENT_ID`.
+your existing `chalk login`.
 
 ```bash
-./deploy_services.py            # ops MCP server + Datadog API stand-in; writes .services.env
-./run.py                        # investigate incidents/webhook.json from your machine
-./deploy_responder.py           # optional: answer real webhooks
+./deploy_services.py # ops MCP server + Datadog API stand-in; writes .services.env
+./run.py # investigate incidents/webhook.json from your machine
+./deploy_responder.py # optional: answer real webhooks
 ```
 
 To have Datadog start investigations, add a webhook in Datadog's Webhooks integration that
@@ -112,3 +111,14 @@ curl -H "X-Webhook-Secret: $WEBHOOK_SECRET" "$RESPONDER_URL/runs/<run_id>"
 ## License
 
 Apache-2.0.
+
+## Local authentication
+
+The SDK reads credentials, API host, and the selected environment from your existing
+`chalk login` in `~/.chalk.yml`, including project-scoped and default logins.
+For unattended runs, `CHALK_CLIENT_ID` and `CHALK_CLIENT_SECRET` remain supported.
+The examples use the current environment selected by your Chalk login.
+
+Requires `chalkcompute>=2.13.8` with the public connection context and in-memory
+secret APIs from [chalk-sandbox-sdk#511](https://github.com/chalk-ai/chalk-sandbox-sdk/pull/511).
+This PR is waiting for that SDK release.
