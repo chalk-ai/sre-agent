@@ -2,7 +2,7 @@
 #
 # /// script
 # requires-python = ">=3.12,<3.14"
-# dependencies = ["chalkcompute>=2.13.5"]
+# dependencies = ["chalkcompute>=2.13.8"]
 # ///
 """Deploy the webhook responder: a small ScalingGroup that starts an investigation per incident.
 
@@ -25,12 +25,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from chalk_env import load_chalk_env  # noqa: E402
 from deploy_services import ENV_FILE, read_env_file  # noqa: E402
 
 
 def main() -> None:
-    load_chalk_env()
     from chalkcompute import Image, ReadinessProbe, ScalingGroup, Secret
 
     saved = read_env_file()
@@ -43,7 +41,7 @@ def main() -> None:
 
     image = (
         Image.debian_slim(python_version="3.12")
-        .pip_install(["chalkcompute>=2.13.5", "fastapi==0.116.1", "uvicorn==0.35.0", "httpx==0.28.1"])
+        .pip_install(["chalkcompute>=2.13.8", "fastapi==0.116.1", "uvicorn==0.35.0", "httpx==0.28.1"])
         .add_local_file(str(HERE / "responder.py"), "/app/responder.py", strategy="copy")
         .add_local_file(str(HERE / "investigation.py"), "/app/investigation.py", strategy="copy")
         .add_local_file(str(HERE / "agent.py"), "/app/agent.py", strategy="copy")
@@ -55,8 +53,6 @@ def main() -> None:
         cpu="500m",
         memory="1Gi",
         env={
-            "CHALK_API_SERVER": os.environ["CHALK_API_SERVER"],
-            "CHALK_ENVIRONMENT_ID": os.environ["CHALK_ENVIRONMENT_ID"],
             "OPS_MCP_URL": saved["OPS_MCP_URL"],
             "DD_API_URL": saved["DD_API_URL"],
             **{key: Secret.from_local_env(f"DEPLOY_{key}") for key in secret_keys},

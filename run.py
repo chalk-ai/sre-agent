@@ -2,7 +2,7 @@
 #
 # /// script
 # requires-python = ">=3.12,<3.14"
-# dependencies = ["chalkcompute>=2.13.5", "httpx==0.28.1"]
+# dependencies = ["chalkcompute>=2.13.8", "httpx==0.28.1"]
 # ///
 """Investigate one incident from your machine: the same sandboxed run the webhook responder starts.
 
