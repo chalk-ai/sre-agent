@@ -87,9 +87,9 @@ the SDK’s ambient credentials from `chalk login`, or from `CHALK_API_SERVER`, 
 `CHALK_ENVIRONMENT_ID`.
 
 ```bash
-./deploy_services.py            # ops MCP server + Datadog API stand-in; writes .services.env
-./run.py                        # investigate incidents/webhook.json from your machine
-./deploy_responder.py           # optional: answer real webhooks
+./deploy_services.py # ops MCP server + Datadog API stand-in; writes .services.env
+./run.py # investigate incidents/webhook.json from your machine
+./deploy_responder.py # optional: answer real webhooks
 ```
 
 To have Datadog start investigations, add a webhook in Datadog's Webhooks integration that
@@ -117,5 +117,5 @@ Apache-2.0.
 
 The SDK reads credentials, API host, and the selected environment from your existing
 `chalk login` in `~/.chalk.yml`, including project-scoped and default logins.
-For unattended runs, `CHALK_CLIENT_ID` and `CHALK_CLIENT_SECRET` remain supported. Where available, `--env-id`
-overrides the target environment; otherwise the SDK uses your login or environment settings.
+For unattended runs, `CHALK_CLIENT_ID` and `CHALK_CLIENT_SECRET` remain supported.
+The examples use the current environment selected by your Chalk login.

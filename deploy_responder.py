@@ -10,14 +10,13 @@ Run deploy_services.py first; this reads .services.env and adds WEBHOOK_SECRET a
 RESPONDER_URL to it. Point a Datadog webhook at $RESPONDER_URL/webhooks/datadog with the
 header `X-Webhook-Secret: $WEBHOOK_SECRET`.
 
-    ./deploy_responder.py [--env-id <environment>]
+    ./deploy_responder.py
 
 The responder starts sandboxes using its own Chalk workload identity.
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 import secrets
 import sys
@@ -31,11 +30,7 @@ from deploy_services import ENV_FILE, read_env_file  # noqa: E402
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env-id", default=None)
-    parser.add_argument("--name", default="sre-agent-responder")
-    args = parser.parse_args()
-    load_chalk_env(args.env_id)
+    load_chalk_env()
     from chalkcompute import Image, ReadinessProbe, ScalingGroup, Secret
 
     saved = read_env_file()
@@ -56,7 +51,7 @@ def main() -> None:
     )
     responder = ScalingGroup(
         image=image,
-        name=args.name,
+        name='sre-agent-responder',
         cpu="500m",
         memory="1Gi",
         env={

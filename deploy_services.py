@@ -9,12 +9,11 @@
 Each gets its own random credentials. URLs and credentials are written to .services.env
 (gitignored), where run.py and responder.py pick them up. Re-running reuses the credentials.
 
-    ./deploy_services.py [--env-id <environment>]
+    ./deploy_services.py
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 import secrets
 from pathlib import Path
@@ -31,12 +30,6 @@ def read_env_file() -> dict[str, str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env-id", default=None)
-    parser.add_argument("--prefix", default="halyard")
-    args = parser.parse_args()
-    if args.env_id:
-        os.environ["CHALK_ENVIRONMENT"] = args.env_id
     from chalkcompute import Image, ReadinessProbe, ScalingGroup, Secret
 
     saved = read_env_file()
@@ -54,7 +47,7 @@ def main() -> None:
     )
     ops = ScalingGroup(
         image=ops_image,
-        name=f"{args.prefix}-ops-mcp",
+        name='halyard-ops-mcp',
         cpu="500m",
         memory="1Gi",
         env={"OPS_MCP_TOKEN": Secret.from_local_env("DEPLOY_OPS_MCP_TOKEN")},
@@ -76,7 +69,7 @@ def main() -> None:
     )
     incidents = ScalingGroup(
         image=incidents_image,
-        name=f"{args.prefix}-incidents-api",
+        name='halyard-incidents-api',
         cpu="250m",
         memory="512Mi",
         env={

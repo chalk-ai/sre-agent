@@ -5,11 +5,9 @@ from __future__ import annotations
 import os
 
 
-def load_chalk_env(env_id: str | None) -> None:
+def load_chalk_env() -> None:
     from chalkcompute import ConnectClient
 
-    if env_id:
-        os.environ["CHALK_ENVIRONMENT"] = env_id
     client = ConnectClient()
     try:
         client._ensure_auth()

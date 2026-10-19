@@ -6,7 +6,7 @@
 # ///
 """Investigate one incident from your machine: the same sandboxed run the webhook responder starts.
 
-    ./run.py [incidents/webhook.json] [--model anthropic/claude-sonnet-5-5]
+    ./run.py [incidents/webhook.json]
 
 Needs .services.env from deploy_services.py, and Chalk credentials from your existing `chalk login` (or the
 CHALK_* environment variables). Writes the run's trace to traces/<timestamp>.jsonl.
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -71,12 +70,8 @@ def render(event: dict[str, Any]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("webhook", nargs="?", default=str(HERE / "incidents" / "webhook.json"))
-    parser.add_argument("--model", default=DEFAULT_MODEL)
-    parser.add_argument("--env-id", default=None)
     args = parser.parse_args()
 
-    if args.env_id:
-        os.environ["CHALK_ENVIRONMENT"] = args.env_id
     services = load_services()
     webhook = json.loads(Path(args.webhook).read_text())
 
@@ -98,7 +93,7 @@ def main() -> int:
             trace.flush()
             print(render(event), flush=True)
 
-        exit_code = investigate(webhook, services, args.model, record)
+        exit_code = investigate(webhook, services, DEFAULT_MODEL, record)
     print(f"\ntrace: {trace_path.relative_to(HERE)}")
     return exit_code
 
