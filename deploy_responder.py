@@ -12,8 +12,7 @@ header `X-Webhook-Secret: $WEBHOOK_SECRET`.
 
     ./deploy_responder.py [--env-id <environment>]
 
-The responder starts sandboxes with the Chalk client credentials this script deploys it with.
-Give it a service token scoped to the one environment rather than a personal one.
+The responder starts sandboxes using its own Chalk workload identity.
 """
 
 from __future__ import annotations
@@ -27,7 +26,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from deploy_services import ENV_FILE, load_chalk_env, read_env_file  # noqa: E402
+from chalk_env import load_chalk_env  # noqa: E402
+from deploy_services import ENV_FILE, read_env_file  # noqa: E402
 
 
 def main() -> None:
@@ -62,14 +62,13 @@ def main() -> None:
         env={
             "CHALK_API_SERVER": os.environ["CHALK_API_SERVER"],
             "CHALK_ENVIRONMENT_ID": os.environ["CHALK_ENVIRONMENT_ID"],
-            "CHALK_CLIENT_ID": Secret.from_local_env("CHALK_CLIENT_ID"),
-            "CHALK_CLIENT_SECRET": Secret.from_local_env("CHALK_CLIENT_SECRET"),
             "OPS_MCP_URL": saved["OPS_MCP_URL"],
             "DD_API_URL": saved["DD_API_URL"],
             **{key: Secret.from_local_env(f"DEPLOY_{key}") for key in secret_keys},
         },
         entrypoint=["python", "/app/responder.py"],
         port=8080,
+        chalk_identity=True,
         readiness_probe=ReadinessProbe.http("/healthz"),
         min_replicas=1,
         max_replicas=1,
